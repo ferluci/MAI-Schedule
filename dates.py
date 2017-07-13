@@ -86,7 +86,26 @@ def time_diff(comp_time):
 
 
 def date_diff(date):
-    pass
+    today = datetime.today()
+    current_year = datetime.today().year
+    date = datetime(current_year, int(date[3:]), int(date[:2]))
+    return str(date - today)
+
+
+# TODO refact, don't like function name
+def session_diff():
+    today = datetime.today()
+    current_year = datetime.today().year
+    current_month = datetime.today().month
+    if 7 > current_month > 1:
+        session_date_list = config.summer_session_date
+        session_date = datetime(current_year, session_date_list[1],
+                                session_date_list[0])
+    else:
+        session_date_list = config.winter_session_date
+        session_date = datetime(current_year + 1, session_date_list[1],
+                                session_date_list[0])
+    return str(session_date - today)
 
 
 def _week_day_name(week_day):

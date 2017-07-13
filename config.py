@@ -24,7 +24,7 @@ SOFTWARE.
 '''
 
 
-token = ''
+token = '320017070:AAGgaB6LwkXssOPIXV_f9oAh3eSP7-UcX8o'
 
 '''
 Дата понедельника, первой учебной недели
@@ -38,6 +38,10 @@ token = ''
 start_year = 2017
 start_month = 2
 start_day = 6
+
+# TODO bad names
+winter_session_date = [9, 1]
+summer_session_date = [8, 6]
 
 get_group = '''
 Напиши мне свою группу. Полностью. Со всеми цифрами и буквами.\n

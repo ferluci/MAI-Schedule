@@ -94,7 +94,7 @@ def next_less(message):
     if week_day == 'Пн':
         week_type = dates.get_next_week_type()
     scheldule = db.get_day_scheldule(group, week_type, week_day)
-    send_scheldule(message, scheldule)
+    send_scheldule(message, scheldule[0])
 
 
 @bot.message_handler(func=lambda message:
@@ -198,12 +198,19 @@ def session(message):
 @bot.message_handler(func=lambda message:
                      message.text == 'Сколько дней до сессии?')
 def remaining_days(message):
-    pass
+    bot.send_message(message.chat.id, dates.session_diff())
 
 
 @bot.message_handler(func=lambda message: message.text == 'Ближайший экзамен')
 def nearest_exam(message):
-    pass
+    group = db.get_group(message.chat.id)
+    session_scheldule = db.get_session(group)
+    for i in range(len(session_scheldule)):
+        # TODO Hard construction
+        if dates.date_diff(session_scheldule[i][0][:5])[0] != '-':
+            send_scheldule(message, session_scheldule[i])
+            return
+    bot.send_message(message.chat.id, 'Кажется сессия закончилась')
 
 
 @bot.message_handler(func=lambda message: message.text == 'Расписание сессии')
