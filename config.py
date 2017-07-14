@@ -24,7 +24,7 @@ SOFTWARE.
 '''
 
 
-token = '320017070:AAGgaB6LwkXssOPIXV_f9oAh3eSP7-UcX8o'
+token = ''
 
 '''
 Дата понедельника, первой учебной недели
@@ -39,9 +39,10 @@ start_year = 2017
 start_month = 2
 start_day = 6
 
-# TODO bad names
-winter_session_date = [9, 1]
-summer_session_date = [8, 6]
+
+# Даты сессий хранятся в массивах в формате: месяц, день
+winter_session_date = [1, 9]
+summer_session_date = [6, 8]
 
 get_group = '''
 Напиши мне свою группу. Полностью. Со всеми цифрами и буквами.\n
@@ -55,7 +56,7 @@ already_registered = '''
 
 contacts = '''
 Создатель - @vakakvaka\nРепозиторий проекта на git\'е -
-https://github.com/Ferluci/schedulemai
+https://github.com/Ferluci/MAI-Schedule
 '''
 
 completed = 'Успешно!'

@@ -86,9 +86,10 @@ def next_less(message):
     group = db.get_group(message.chat.id)
     scheldule = db.get_day_scheldule(group, week_type, week_day)
     for lesson in scheldule:
-            if dates.time_diff(lesson[0][:5])[0] != '-':
-                send_scheldule(message, lesson)
-                return
+        lesson_time = lesson[0][:5]
+        if dates.time_diff(lesson_time) is not None:
+            send_scheldule(message, lesson)
+            return
 
     week_day = dates.get_next_week_day(week_day)
     if week_day == 'Пн':
@@ -105,7 +106,8 @@ def next_lab(message):
     group = db.get_group(message.chat.id)
     scheldule = db.get_day_scheldule(group, week_type, week_day)
     for lesson in scheldule:
-            if lesson[1] == 'ЛР' and dates.time_diff(lesson[0][:5])[0] != '-':
+        lesson_time = lesson[0][:5]
+        if lesson[1] == 'ЛР' and dates.time_diff(lesson_time) is not None:
                 send_scheldule(message, lesson)
                 return
 
@@ -198,17 +200,17 @@ def session(message):
 @bot.message_handler(func=lambda message:
                      message.text == 'Сколько дней до сессии?')
 def remaining_days(message):
-    bot.send_message(message.chat.id, dates.session_diff())
+    bot.send_message(message.chat.id, dates.time_left_before_session())
 
 
 @bot.message_handler(func=lambda message: message.text == 'Ближайший экзамен')
 def nearest_exam(message):
     group = db.get_group(message.chat.id)
     session_scheldule = db.get_session(group)
-    for i in range(len(session_scheldule)):
-        # TODO Hard construction
-        if dates.date_diff(session_scheldule[i][0][:5])[0] != '-':
-            send_scheldule(message, session_scheldule[i])
+    for exam in session_scheldule:
+        exam_date = exam[0][:5]
+        if dates.date_diff(exam_date) is not None:
+            send_scheldule(message, exam)
             return
     bot.send_message(message.chat.id, 'Кажется сессия закончилась')
 
