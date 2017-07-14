@@ -110,7 +110,7 @@ def time_left_before_session():
         session_date_list = config.winter_session_date
         session_date = datetime(current_year + 1, session_date_list[0],
                                 session_date_list[1])
-    return str(session_date - today)
+    return (session_date - today).days
 
 
 def _week_day_name(week_day):
@@ -135,3 +135,8 @@ def day_full_name(week_day):
             'Сб': 'Суббота',
             'Вс': 'Воскресенье'}
     return week[week_day]
+
+
+def week_day_check(week_day):
+    week = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс']
+    return week_day in week

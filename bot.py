@@ -24,13 +24,14 @@ SOFTWARE.
 '''
 
 
+import re
 import dates
 import config
 import telebot
 import db_manage
 
 
-bot = telebot.TeleBot(config.token)
+bot = telebot.TeleBot(config.TOKEN)
 
 
 @bot.message_handler(commands=['start'])
@@ -61,67 +62,109 @@ def help_redirect(message):
 @bot.message_handler(commands=['help'])
 def help(message):
     markup = telebot.types.ReplyKeyboardMarkup()
-    markup.row('Следующая пара?', 'Следующая лабораторная?')
+    markup.row('Следующая пара', 'Следующая лабораторная')
     markup.row('Расписание занятий', 'Сессия')
     markup.row('Настройки', 'О нас')
     bot.send_message(message.chat.id,
                      'Что ты хочешь узнать?', reply_markup=markup)
 
 
-def send_scheldule(message, scheldule):
+def scheldule_prettify(scheldule):
     if scheldule == []:
-        bot.send_message(message.chat.id, 'Сегодня занятий нету')
+        return 'Сегодня занятий нету'
     else:
         bot_message = ''
-        for item in scheldule:
-            bot_message += (item + '\n')
-        bot.send_message(message.chat.id, bot_message)
+        location = '📍 ' + scheldule[-1] + '\n'
+        if 'Кафедра' in scheldule[-2]:
+            teacher = ''
+        else:
+            teacher = '👤 ' + scheldule[-2] + '\n'
+        subject = '📝 ' + scheldule[-3] + '\n'
+
+        for elem in scheldule:
+            if re.match(r'\d{2}:\d{2}', elem):
+                time = '⌚ ' + elem + '\n'
+            if re.match(r'\d{2}[.]\d{2}', elem):
+                date = elem
+                week_day = ''
+                if len(date) > 5:
+                    week_day = date[5:]
+                    date = date[:5] + ' '
+                    bot_message += '=== ' + date +\
+                                   dates.day_full_name(week_day) +\
+                                   ' ===' + '\n'
+        bot_message += teacher + subject + time + location + '\n'
+        return bot_message
 
 
 @bot.message_handler(func=lambda message:
-                     message.text == 'Следующая пара?')
+                     message.text == 'Следующая пара')
 def next_less(message):
     week_type = dates.get_current_week_type()
     week_day = dates.get_today_week_day()
     group = db.get_group(message.chat.id)
     scheldule = db.get_day_scheldule(group, week_type, week_day)
     for lesson in scheldule:
-        lesson_time = lesson[0][:5]
+        lesson_time = lesson[1][:5]
         if dates.time_diff(lesson_time) is not None:
-            send_scheldule(message, lesson)
+            chat_message = '=== ' + dates.day_full_name(week_day) +\
+                               ' ===' + '\n'
+            chat_message += scheldule_prettify(lesson)
+            bot.send_message(message.chat.id, chat_message)
             return
 
     week_day = dates.get_next_week_day(week_day)
     if week_day == 'Пн':
         week_type = dates.get_next_week_type()
     scheldule = db.get_day_scheldule(group, week_type, week_day)
-    send_scheldule(message, scheldule[0])
+
+    two_weeks = 14
+    for i in range(two_weeks):
+        week_day = dates.get_next_week_day(week_day)
+        if week_day == 'Пн':
+            week_type = dates.get_next_week_type()
+        scheldule = db.get_day_scheldule(group, week_type, week_day)
+        if scheldule != []:
+            chat_message = '=== ' + dates.day_full_name(week_day) +\
+                               ' ===' + '\n'
+            chat_message += scheldule_prettify(scheldule[0])
+            bot.send_message(message.chat.id, chat_message)
+            return
+    bot.send_message(message.chat.id, config.dat_scheldule_empty)
 
 
 @bot.message_handler(func=lambda message:
-                     message.text == 'Следующая лабораторная?')
+                     message.text == 'Следующая лабораторная')
 def next_lab(message):
     week_type = dates.get_current_week_type()
     week_day = dates.get_today_week_day()
     group = db.get_group(message.chat.id)
     scheldule = db.get_day_scheldule(group, week_type, week_day)
     for lesson in scheldule:
-        lesson_time = lesson[0][:5]
-        if lesson[1] == 'ЛР' and dates.time_diff(lesson_time) is not None:
-                send_scheldule(message, lesson)
+        lesson_time = lesson[1][:5]
+        if lesson[2] == 'ЛР' and dates.time_diff(lesson_time) is not None:
+                chat_message = '=== ' + dates.day_full_name(week_day) +\
+                               ' ===' + '\n'
+                chat_message += scheldule_prettify(lesson)
+                bot.send_message(message.chat.id, chat_message)
                 return
 
     # Если в сегодняшнем дне на найдена лабораторная, то переходим к поиску
     # По всем последующим дням
-    while True:
+    two_weeks = 14
+    for i in range(two_weeks):
         week_day = dates.get_next_week_day(week_day)
         if week_day == 'Пн':
             week_type = dates.get_next_week_type()
         scheldule = db.get_day_scheldule(group, week_type, week_day)
         for lesson in scheldule:
-            if lesson[1] == 'ЛР':
-                send_scheldule(message, lesson)
+            if lesson[2] == 'ЛР':
+                chat_message = '=== ' + dates.day_full_name(week_day) +\
+                               ' ===' + '\n'
+                chat_message += scheldule_prettify(lesson)
+                bot.send_message(message.chat.id, chat_message)
                 return
+    bot.send_message(message.chat.id, config.laboratory_empty)
 
 
 @bot.message_handler(func=lambda message:
@@ -145,8 +188,10 @@ def today_scheldule(message):
     if scheldule == []:
         bot.send_message(message.chat.id, 'Сегодня занятий нет')
     else:
+        chat_message = '=== ' + dates.day_full_name(week_day) + ' ===' + '\n'
         for lesson in scheldule:
-            send_scheldule(message, lesson)
+            chat_message += scheldule_prettify(lesson)
+        bot.send_message(message.chat.id, chat_message)
 
 
 @bot.message_handler(func=lambda message:
@@ -160,10 +205,12 @@ def tomorrow_scheldule(message):
     group = db.get_group(message.chat.id)
     scheldule = db.get_day_scheldule(group, week_type, week_day)
     if scheldule == []:
-        bot.send_message(message.chat.id, 'Сегодня занятий нет')
+        bot.send_message(message.chat.id, 'Завтра занятий нет')
     else:
+        chat_message = '=== ' + dates.day_full_name(week_day) + ' ===' + '\n'
         for lesson in scheldule:
-            send_scheldule(message, lesson)
+            chat_message += scheldule_prettify(lesson)
+        bot.send_message(message.chat.id, chat_message)
 
 
 @bot.message_handler(func=lambda message:
@@ -172,8 +219,17 @@ def current_week_scheldule(message):
     week_type = dates.get_current_week_type()
     group = db.get_group(message.chat.id)
     scheldule = db.get_week_scheldule(group, week_type)
-    for lesson in scheldule:
-        send_scheldule(message, lesson)
+    if scheldule == []:
+        bot.send_message(message.chat.id, config.week_scheldule_empty)
+    else:
+        current_week_day = 'Пн'
+        chat_message = '=== ' + current_week_day + ' ===' + '\n'
+        for lesson in scheldule:
+            if lesson[0] != current_week_day:
+                current_week_day = lesson[0]
+                chat_message += '=== ' + current_week_day + ' ===' + '\n'
+            chat_message += scheldule_prettify(lesson)
+        bot.send_message(message.chat.id, chat_message)
 
 
 @bot.message_handler(func=lambda message:
@@ -182,8 +238,17 @@ def next_week_scheldule(message):
     week_type = dates.get_next_week_type()
     group = db.get_group(message.chat.id)
     scheldule = db.get_week_scheldule(group, week_type)
-    for lesson in scheldule:
-        send_scheldule(message, lesson)
+    if scheldule == []:
+        bot.send_message(message.chat.id, config.week_scheldule_empty)
+    else:
+        current_week_day = 'Пн'
+        chat_message = '=== ' + current_week_day + ' ===' + '\n'
+        for lesson in scheldule:
+            if lesson[0] != current_week_day:
+                current_week_day = lesson[0]
+                chat_message += '=== ' + current_week_day + ' ===' + '\n'
+            chat_message += scheldule_prettify(lesson)
+        bot.send_message(message.chat.id, chat_message)
 
 
 @bot.message_handler(func=lambda message:
@@ -200,17 +265,22 @@ def session(message):
 @bot.message_handler(func=lambda message:
                      message.text == 'Сколько дней до сессии?')
 def remaining_days(message):
-    bot.send_message(message.chat.id, dates.time_left_before_session())
+    chat_message = 'До сессии осталось {} дней'.format(
+        dates.time_left_before_session())
+    bot.send_message(message.chat.id, chat_message)
 
 
 @bot.message_handler(func=lambda message: message.text == 'Ближайший экзамен')
 def nearest_exam(message):
     group = db.get_group(message.chat.id)
     session_scheldule = db.get_session(group)
+    if session_scheldule is None:
+        bot.send_message(message.chat.id, config.session_empty)
+        return
     for exam in session_scheldule:
         exam_date = exam[0][:5]
         if dates.date_diff(exam_date) is not None:
-            send_scheldule(message, exam)
+            bot.send_message(message.chat.id, scheldule_prettify(exam))
             return
     bot.send_message(message.chat.id, 'Кажется сессия закончилась')
 
@@ -219,8 +289,11 @@ def nearest_exam(message):
 def exam_scheldule(message):
     group = db.get_group(message.chat.id)
     session_scheldule = db.get_session(group)
+    if session_scheldule is None:
+        bot.send_message(message.chat.id, config.session_empty)
+        return
     for exam in session_scheldule:
-        send_scheldule(message, exam)
+        bot.send_message(message.chat.id, scheldule_prettify(exam))
 
 
 @bot.message_handler(func=lambda message:
@@ -248,14 +321,17 @@ def settings(message):
 @bot.message_handler(func=lambda message:
                      message.text == '📝 Изменить группу')
 def change_group_pre(message):
+    group = db.get_group(message.chat.id)
+    if group is not None:
+        bot.send_message(message.chat.id, 'Ваша текущая группа: ' + group)
     message = bot.send_message(message.chat.id, config.get_group)
     bot.register_next_step_handler(message, change_group_post)
 
 
 def change_group_post(message):
     group = message.text.upper()
-    group_var = []
-    group_var.append(group)
+    groups_list = []
+    groups_list.append(group)
 
     if message.text == 'Назад':
         help(message)
@@ -265,18 +341,18 @@ def change_group_post(message):
     # Данный цикл генерирует различные комбинации имени группы,
     # где заместо нуля ставится буква О
     for i in range(group.count('0')):
-        group = group_var[-1][:group_var[-1].index('0')] + 'О' +\
-                          group_var[-1][group_var[-1].index('0') + 1:]
-        group_var.append(group)
+        group = groups_list[-1][:groups_list[-1].index('0')] + 'О' +\
+                          groups_list[-1][groups_list[-1].index('0') + 1:]
+        groups_list.append(group)
 
-    for group in group_var:
+    for group in groups_list:
         if group in db.groups:
             db.update_group(message.chat.id, group)
             bot.send_message(message.chat.id, config.completed)
             help(message)
             return
 
-    bot.send_message(message.chat.id, 'Вы где-то ошиблись')
+    bot.send_message(message.chat.id, 'Вы где-то ошиблись, попробуйте еще раз')
     bot.register_next_step_handler(message, change_group_post)
     return
 
@@ -309,5 +385,5 @@ def about(message):
 
 
 if __name__ == '__main__':
-    db = db_manage.Database('bot.db')
+    db = db_manage.Database(config.DB_NAME)
     bot.polling(none_stop=True)
