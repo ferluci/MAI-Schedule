@@ -30,6 +30,8 @@ from sqlite3 import connect
 from bs4 import BeautifulSoup
 #DEL
 import random
+import re
+
 
 class Database:
     def __init__(self, db_name):
@@ -41,10 +43,11 @@ class Database:
             self.create_scheldule_table()
             self.create_session_table()
             self.fill_groups_table()
-            self.groups = tuple(self.get_groups())
+            # '1МЕТ-2ДБ-030',
+            self.groups = ['3ИВТ-4ДБ-234']
             self.fill_scheldule_table()
             self.fill_session_table()
-        self.groups = tuple(self.get_groups())
+        self.groups = ['1МЕТ-2ДБ-030', '3ИВТ-4ДБ-234']
 
     #DEL
     def rnd(self):
@@ -198,38 +201,6 @@ class Database:
         con.commit()
         con.close()
 
-    def _fill_week(self, week, group, week_type):
-        con = connect(self.db_name)
-        cur = con.cursor()
-        for day in week:
-            date = day[0][-2:]
-            day.pop(0)
-            for i in range(0, len(day)-4, 5):
-                time = day[i]
-                lesson_type = day[i+1]
-                subject = day[i+2]
-                teacher = day[i+3]
-                location = day[i+4].replace(u'\xa0', u'')
-                cur.execute("INSERT INTO Scheldule " +
-                            "(group_name, week_type, day," +
-                            " time, lesson_type, subject, " +
-                            "teacher, location) " +
-                            "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-                            [group, week_type, date,
-                             time, lesson_type, subject, teacher, location])
-                con.commit()
-        con.close()
-
-    def fill_scheldule_table(self):
-        for group in self.groups:
-            down_week = self._parse_scheldule(group, 4)
-            up_week = self._parse_scheldule(group, 5)
-
-            self._fill_week(up_week, group, 0)
-            self._fill_week(down_week, group, 1)
-
-            sleep(0.5)
-
     def get_groups(self):
         con = connect(self.db_name)
         cur = con.cursor()
@@ -310,4 +281,69 @@ class Database:
         con.commit()
         con.close()
 
+    def fill_scheldule_table(self):
+        print(self.groups)
+        for group in self.groups:
+            down_week = self._parse_scheldule(group, 4)
+            up_week = self._parse_scheldule(group, 5)
+
+            self._fill_week(up_week, group, 0)
+            self._fill_week(down_week, group, 1)
+
+    def _fill_week(self, week, group, week_type):
+        for day in week:
+            day, date = self._sepate_by_lessons(day)
+            for lesson in day:
+                if lesson[0] == 'Военная подготовка':
+                        subject = 'Военная подготовка'
+                        time = lesson[-1]
+                        location = lesson[-2].replace(u'\xa0', u'')
+                        self._fill_day(group, week_type, date,
+                                       time, subject, location)
+                        continue
+
+                time = lesson[-1]
+                location = lesson[-2].replace(u'\xa0', u'')
+                lesson_type = lesson[0]
+                subject = lesson[1]
+                if len(lesson) == 4:
+                    teacher = ''
+                else:
+                    teacher = lesson[2]
+                self._fill_day(group, week_type, date, time, subject, location,
+                               lesson_type, teacher)
+
+    def _sepate_by_lessons(self, day):
+        date = day[0][-2:]
+        day.pop(0)
+        day_str = '|'.join(day)
+        times = re.findall(r'\d{2}:\d{2}\s–\s\d{2}:\d{2}', day_str)
+        day = []
+        separated_day = re.split(r'\d{2}:\d{2}\s–\s\d{2}:\d{2}', day_str)
+        for lesson in separated_day:
+            if lesson != '':
+                lesson = lesson.split('|')
+                for i in range(lesson.count('')):
+                    lesson.pop(lesson.index(''))
+                day.append(lesson)
+        for i in range(len(times)):
+            day[i].append(times[i])
+        return day, date
+
+    def _fill_day(self, group, week_type, date, time, subject, location,
+                  lesson_type='', teacher=''):
+        con = connect(self.db_name)
+        cur = con.cursor()
+        cur.execute("INSERT INTO Scheldule " +
+                    "(group_name, week_type, day," +
+                    " time, lesson_type, subject, " +
+                    "teacher, location) " +
+                    "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                    [group, week_type, date,
+                     time, lesson_type, subject, teacher, location])
+        con.commit()
+        con.close()
+
 db = Database('bot.db')
+db.create_scheldule_table()
+db.fill_scheldule_table()

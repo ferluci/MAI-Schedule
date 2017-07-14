@@ -157,8 +157,8 @@ def next_lab(message):
 
     # Если в сегодняшнем дне на найдена лабораторная, то переходим к поиску
     # По всем последующим дням
-    TWO_WEEKS = 14
-    for i in range(TWO_WEEKS):
+    two_weeks = 14
+    for i in range(two_weeks):
         week_day = dates.get_next_week_day(week_day)
         if week_day == 'Пн':
             week_type = dates.get_next_week_type()
@@ -335,8 +335,8 @@ def change_group_pre(message):
 
 def change_group_post(message):
     group = message.text.upper()
-    group_var = []
-    group_var.append(group)
+    groups_list = []
+    groups_list.append(group)
 
     if message.text == 'Назад':
         help(message)
@@ -346,11 +346,11 @@ def change_group_post(message):
     # Данный цикл генерирует различные комбинации имени группы,
     # где заместо нуля ставится буква О
     for i in range(group.count('0')):
-        group = group_var[-1][:group_var[-1].index('0')] + 'О' +\
-                          group_var[-1][group_var[-1].index('0') + 1:]
-        group_var.append(group)
+        group = groups_list[-1][:groups_list[-1].index('0')] + 'О' +\
+                          groups_list[-1][groups_list[-1].index('0') + 1:]
+        groups_list.append(group)
 
-    for group in group_var:
+    for group in groups_list:
         if group in db.groups:
             db.update_group(message.chat.id, group)
             bot.send_message(message.chat.id, config.completed)
