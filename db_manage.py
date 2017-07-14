@@ -33,7 +33,26 @@ from bs4 import BeautifulSoup
 class Database:
     def __init__(self, db_name):
         self.db_name = db_name
+        self.tables = self.get_tables()
+        if len(self.tables) == 0:
+            self.create_users_table()
+            self.create_groups_table()
+            self.create_scheldule_table()
+            self.create_session_table()
+            self.fill_groups_table()
+            self.groups = tuple(self.get_groups())
+            self.fill_scheldule_table()
+            self.fill_session_table()
         self.groups = tuple(self.get_groups())
+
+    def get_tables(self):
+        con = connect(self.db_name)
+        cur = con.cursor()
+        cur.execute("SELECT name FROM sqlite_master " +
+                    "WHERE type = 'table';")
+        result = cur.fetchall()
+        con.close()
+        return result
 
     def create_users_table(self):
         con = connect(self.db_name)
@@ -93,6 +112,16 @@ class Database:
             groups.append(group)
         return groups
 
+    def _parse_examining_groups(self):
+        target_url = 'https://www.mai.ru/education/schedule/session'
+        request = get(target_url)
+        soup = BeautifulSoup(request.text, "html.parser")
+        groups = []
+        for group in soup.find_all('a', class_="sc-group-item"):
+            group = group.get_text()
+            groups.append(group)
+        return groups
+
     def _parse_session(self, group_name):
         target_url = "https://www.mai.ru/" +\
                      "education/schedule/session.php?group=" +\
@@ -132,19 +161,31 @@ class Database:
     def fill_session_table(self):
         con = connect(self.db_name)
         cur = con.cursor()
-        for group in self.groups:
+        for group in self._parse_examining_groups():
             session = self._parse_session(group)
             for exam in session:
-                date = exam[0]
-                time = exam[1]
-                subject = exam[3]
-                teacher = exam[4]
-                location = exam[5].replace(u'\xa0', u'')
-                cur.execute("INSERT INTO Session " +
-                            "(group_name, date, time," +
-                            " subject, teacher, location) " +
-                            "VALUES (?, ?, ?, ?, ?, ?)",
-                            [group, date, time, subject, teacher, location])
+                if len(exam) == 6:
+                    date = exam[0]
+                    time = exam[1]
+                    subject = exam[3]
+                    teacher = exam[4]
+                    location = exam[5].replace(u'\xa0', u'')
+                    cur.execute("INSERT INTO Session " +
+                                "(group_name, date, time," +
+                                " subject, teacher, location) " +
+                                "VALUES (?, ?, ?, ?, ?, ?)",
+                                [group, date, time,
+                                 subject, teacher, location])
+                else:
+                    date = exam[0]
+                    time = exam[1]
+                    subject = exam[3]
+                    location = exam[4].replace(u'\xa0', u'')
+                    cur.execute("INSERT INTO Session " +
+                                "(group_name, date, time," +
+                                " subject, location) " +
+                                "VALUES (?, ?, ?, ?, ?)",
+                                [group, date, time, subject, location])
                 con.commit()
 
             sleep(0.5)
@@ -175,7 +216,6 @@ class Database:
 
     def fill_scheldule_table(self):
         for group in self.groups:
-
             down_week = self._parse_scheldule(group, 4)
             up_week = self._parse_scheldule(group, 5)
 
@@ -262,6 +302,5 @@ class Database:
         con.commit()
         con.close()
 
-
-if __name__ == '__main__':
-    pass
+db = Database('bot.db')
+db.get_week_scheldule('М8О-101Б-16', 0)

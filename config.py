@@ -24,7 +24,7 @@ SOFTWARE.
 '''
 
 
-token = ''
+token = '320017070:AAGgaB6LwkXssOPIXV_f9oAh3eSP7-UcX8o'
 
 '''
 Дата понедельника, первой учебной недели

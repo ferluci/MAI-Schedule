@@ -186,6 +186,11 @@ def next_week_scheldule(message):
         send_scheldule(message, lesson)
 
 
+def session_check(session_scheldule):
+    if session_scheldule == [] or session_scheldule is None:
+        pass
+
+
 @bot.message_handler(func=lambda message:
                      message.text == 'Сессия')
 def session(message):
