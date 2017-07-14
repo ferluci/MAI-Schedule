@@ -24,7 +24,9 @@ SOFTWARE.
 '''
 
 
-token = '320017070:AAGgaB6LwkXssOPIXV_f9oAh3eSP7-UcX8o'
+TOKEN = '320017070:AAGgaB6LwkXssOPIXV_f9oAh3eSP7-UcX8o'
+DB_NAME = 'bot.db'
+
 
 '''
 Дата понедельника, первой учебной недели
@@ -44,6 +46,7 @@ start_day = 6
 winter_session_date = [1, 9]
 summer_session_date = [6, 8]
 
+
 get_group = '''
 Напиши мне свою группу. Полностью. Со всеми цифрами и буквами.\n
 Примеры: М1О-101Б-16, 3О-202М-15, 2РКК-3ДБ-292
@@ -57,6 +60,26 @@ already_registered = '''
 contacts = '''
 Создатель - @vakakvaka\nРепозиторий проекта на git\'е -
 https://github.com/Ferluci/MAI-Schedule
+'''
+
+session_empty = '''
+Судя по всему у вас нет экзаменов,
+если это не так, то свяжитесь с разработчиком @vakakvaka
+'''
+
+laboratory_empty = '''
+Судя по всему у вас нет лабораторных,
+если это не так, то свяжитесь с разработчиком @vakakvaka
+'''
+
+day_scheldule_empty = '''
+Кажется у вас нет занятий,
+если это не так, то свяжитесь с разработчиком @vakakvaka
+'''
+
+week_scheldule_empty = '''
+Кажется у вас нет занятий,
+если это не так, то свяжитесь с разработчиком @vakakvaka
 '''
 
 completed = 'Успешно!'

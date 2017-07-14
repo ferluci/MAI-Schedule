@@ -28,7 +28,8 @@ from time import sleep
 from requests import get
 from sqlite3 import connect
 from bs4 import BeautifulSoup
-
+#DEL
+import random
 
 class Database:
     def __init__(self, db_name):
@@ -44,6 +45,10 @@ class Database:
             self.fill_scheldule_table()
             self.fill_session_table()
         self.groups = tuple(self.get_groups())
+
+    #DEL
+    def rnd(self):
+        return random.choice(self.groups)
 
     def get_tables(self):
         con = connect(self.db_name)
@@ -95,7 +100,7 @@ class Database:
                     "week_type Integer, " +
                     "day char(2), " +
                     "time char(15), " +
-                    "lesson_type char(2), " +
+                    "lesson_type char(5), " +
                     "subject char(70), " +
                     "teacher char(70), " +
                     "location char(25))")
@@ -154,7 +159,8 @@ class Database:
         cur = con.cursor()
         group_list = self._parse_groups()
         for group in group_list:
-            cur.execute('INSERT INTO Groups (group_name) VALUES (?)', [group])
+            cur.execute('INSERT INTO Groups (group_name) VALUES (?)',
+                        [group.upper])
         con.commit()
         con.close()
 
@@ -259,6 +265,8 @@ class Database:
                                [group]):
             result.append(list(row))
         con.close()
+        if result == []:
+            return None
         return result
 
     def get_week_scheldule(self, group, week_type):
@@ -277,7 +285,7 @@ class Database:
         con = connect(self.db_name)
         cur = con.cursor()
         result = []
-        for row in cur.execute("SELECT time, lesson_type, subject," +
+        for row in cur.execute("SELECT day, time, lesson_type, subject," +
                                "teacher, location FROM Scheldule WHERE " +
                                "group_name=? AND week_type=? AND day=?",
                                [group, week_type, day]):
@@ -303,4 +311,3 @@ class Database:
         con.close()
 
 db = Database('bot.db')
-db.get_week_scheldule('М8О-101Б-16', 0)
