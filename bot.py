@@ -34,12 +34,6 @@ import db_manage
 bot = telebot.TeleBot(config.TOKEN)
 
 
-# DEL
-@bot.message_handler(commands=['rnd'])
-def rnd(message):
-    bot.send_message(message.chat.id, db.rnd())
-
-
 @bot.message_handler(commands=['start'])
 def start(message):
     check = db.check_id(message.chat.id)
@@ -124,8 +118,8 @@ def next_less(message):
         week_type = dates.get_next_week_type()
     scheldule = db.get_day_scheldule(group, week_type, week_day)
 
-    TWO_WEEKS = 14
-    for i in range(TWO_WEEKS):
+    two_weeks = 14
+    for i in range(two_weeks):
         week_day = dates.get_next_week_day(week_day)
         if week_day == 'Пн':
             week_type = dates.get_next_week_type()
@@ -328,7 +322,8 @@ def settings(message):
                      message.text == '📝 Изменить группу')
 def change_group_pre(message):
     group = db.get_group(message.chat.id)
-    bot.send_message(message.chat.id, 'Ваша текущая группа: ' + group)
+    if group is not None:
+        bot.send_message(message.chat.id, 'Ваша текущая группа: ' + group)
     message = bot.send_message(message.chat.id, config.get_group)
     bot.register_next_step_handler(message, change_group_post)
 
