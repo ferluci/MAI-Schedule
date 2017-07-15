@@ -1,35 +1,31 @@
 # -*- coding: utf8 -*-
 
+# Copyright (c) 2017 Anischenko Konstantin Maximovich
 
-'''
-Copyright (c) 2017 Anischenko Konstantin Maximovich
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-'''
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
 
 
 import re
-import dates
-import config
 import telebot
 import db_manage
-
+import config
+import dates
 
 bot = telebot.TeleBot(config.TOKEN)
 
@@ -100,10 +96,15 @@ def scheldule_prettify(scheldule):
 @bot.message_handler(func=lambda message:
                      message.text == 'Следующая пара')
 def next_less(message):
+    if dates.holiday_check():
+        bot.send_message(message.chat.id, config.holiday)
+        return
+
     week_type = dates.get_current_week_type()
     week_day = dates.get_today_week_day()
     group = db.get_group(message.chat.id)
     scheldule = db.get_day_scheldule(group, week_type, week_day)
+
     for lesson in scheldule:
         lesson_time = lesson[1][:5]
         if dates.time_diff(lesson_time) is not None:
@@ -118,8 +119,8 @@ def next_less(message):
         week_type = dates.get_next_week_type()
     scheldule = db.get_day_scheldule(group, week_type, week_day)
 
-    two_weeks = 14
-    for i in range(two_weeks):
+    TWO_WEEKS = 14
+    for i in range(TWO_WEEKS):
         week_day = dates.get_next_week_day(week_day)
         if week_day == 'Пн':
             week_type = dates.get_next_week_type()
@@ -136,6 +137,10 @@ def next_less(message):
 @bot.message_handler(func=lambda message:
                      message.text == 'Следующая лабораторная')
 def next_lab(message):
+    if dates.holiday_check():
+        bot.send_message(message.chat.id, config.holiday)
+        return
+
     week_type = dates.get_current_week_type()
     week_day = dates.get_today_week_day()
     group = db.get_group(message.chat.id)
@@ -151,8 +156,8 @@ def next_lab(message):
 
     # Если в сегодняшнем дне на найдена лабораторная, то переходим к поиску
     # По всем последующим дням
-    two_weeks = 14
-    for i in range(two_weeks):
+    TWO_WEEKS = 14
+    for i in range(TWO_WEEKS):
         week_day = dates.get_next_week_day(week_day)
         if week_day == 'Пн':
             week_type = dates.get_next_week_type()
@@ -181,6 +186,9 @@ def get_schedule(message):
 @bot.message_handler(func=lambda message:
                      message.text == 'На сегодня')
 def today_scheldule(message):
+    if dates.holiday_check():
+        bot.send_message(message.chat.id, config.holiday)
+        return
     week_type = dates.get_current_week_type()
     week_day = dates.get_today_week_day()
     group = db.get_group(message.chat.id)
@@ -197,6 +205,9 @@ def today_scheldule(message):
 @bot.message_handler(func=lambda message:
                      message.text == 'На завтра')
 def tomorrow_scheldule(message):
+    if dates.holiday_check():
+        bot.send_message(message.chat.id, config.holiday)
+        return
     week_day = dates.get_tomorrow_week_day()
     if week_day == 'Пн':
         week_type = dates.get_next_week_type()
@@ -216,6 +227,9 @@ def tomorrow_scheldule(message):
 @bot.message_handler(func=lambda message:
                      message.text == 'На эту неделю')
 def current_week_scheldule(message):
+    if dates.holiday_check():
+        bot.send_message(message.chat.id, config.holiday)
+        return
     week_type = dates.get_current_week_type()
     group = db.get_group(message.chat.id)
     scheldule = db.get_week_scheldule(group, week_type)
@@ -235,6 +249,9 @@ def current_week_scheldule(message):
 @bot.message_handler(func=lambda message:
                      message.text == 'На следующую неделю')
 def next_week_scheldule(message):
+    if dates.holiday_check():
+        bot.send_message(message.chat.id, config.holiday)
+        return
     week_type = dates.get_next_week_type()
     group = db.get_group(message.chat.id)
     scheldule = db.get_week_scheldule(group, week_type)
@@ -282,7 +299,7 @@ def nearest_exam(message):
         if dates.date_diff(exam_date) is not None:
             bot.send_message(message.chat.id, scheldule_prettify(exam))
             return
-    bot.send_message(message.chat.id, 'Кажется сессия закончилась')
+    bot.send_message(message.chat.id, 'Кажется, сессия закончилась')
 
 
 @bot.message_handler(func=lambda message: message.text == 'Расписание сессии')
@@ -344,6 +361,21 @@ def change_group_post(message):
         group = groups_list[-1][:groups_list[-1].index('0')] + 'О' +\
                           groups_list[-1][groups_list[-1].index('0') + 1:]
         groups_list.append(group)
+
+    def strings_correction(list, pattern, correct_pattern):
+        pattern = re.compile(pattern)
+        for i in range(len(list)):
+            list[i] = pattern.sub(correct_pattern, list[i])
+        return list
+
+    if 'БКИ' in group:
+        groups_list = strings_correction(groups_list, 'БКИ', 'Бки')
+    elif 'БК' in group:
+        groups_list = strings_correction(groups_list, 'БК', 'Бк')
+    elif 'МКИ' in group:
+        groups_list = strings_correction(groups_list, 'МКИ', 'Мки')
+    elif 'МК' in group and '6МК-4ДБ-267' not in groups_list:
+        groups_list = strings_correction(groups_list, 'МК', 'Мк')
 
     for group in groups_list:
         if group in db.groups:

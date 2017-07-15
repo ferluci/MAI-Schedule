@@ -1,37 +1,34 @@
 # -*- coding: utf8 -*-
 
+# Copyright (c) 2017 Anischenko Konstantin Maximovich
 
-'''
-Copyright (c) 2017 Anischenko Konstantin Maximovich
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-'''
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
 
 
-import config
 from datetime import date, datetime
+import config
 
 
 def _get_up_week_check():
-    start_week = date(config.start_year,
-                      config.start_month,
-                      config.start_day)
+    start_week = date(config.START_YEAR,
+                      config.START_MONTH,
+                      config.START_DAY)
 
     start_week_number = datetime.isocalendar(start_week)[1]
     if start_week_number % 2 == 0:
@@ -103,19 +100,20 @@ def time_left_before_session():
     current_year = datetime.today().year
     current_month = datetime.today().month
     if 7 > current_month > 1:
-        session_date_list = config.summer_session_date
+        session_date_list = config.SUMMER_SESSION_DATE
         session_date = datetime(current_year, session_date_list[0],
                                 session_date_list[1])
     else:
-        session_date_list = config.winter_session_date
+        session_date_list = config.WINTER_SESSION_DATE
         session_date = datetime(current_year + 1, session_date_list[0],
                                 session_date_list[1])
     return (session_date - today).days
 
 
-def _week_day_name(week_day):
-    week = {0: 'Пн', 1: 'Вт', 2: 'Ср', 3: 'Чт', 4: 'Пт', 5: 'Сб', 6: 'Вс'}
-    return week[week_day]
+def holiday_check():
+    current_month = datetime.today().month
+    januarry, june, july, august = 1, 6, 7, 8
+    return current_month in [januarry, june, july, august]
 
 
 def get_next_week_day(week_day):
@@ -124,6 +122,11 @@ def get_next_week_day(week_day):
         return 'Пн'
     else:
         return _week_day_name(week[week_day] + 1)
+
+
+def _week_day_name(week_day):
+    week = {0: 'Пн', 1: 'Вт', 2: 'Ср', 3: 'Чт', 4: 'Пт', 5: 'Сб', 6: 'Вс'}
+    return week[week_day]
 
 
 def day_full_name(week_day):
