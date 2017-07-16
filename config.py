@@ -21,9 +21,9 @@
 # SOFTWARE.
 
 
-TOKEN = '320017070:AAGgaB6LwkXssOPIXV_f9oAh3eSP7-UcX8o'
+TOKEN = ''
 DB_NAME = 'bot.db'
-
+DEVELOPER_CHAT_ID = 120803423
 
 '''
 Дата понедельника, первой учебной недели
