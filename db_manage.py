@@ -29,24 +29,28 @@ from bs4 import BeautifulSoup
 
 
 class Database:
-    '''Класс обеспечивающий работу с базой данных.'''
+    """Класс обеспечивающий работу с базой данных."""
     def __init__(self, db_name):
         self.db_name = db_name
         self.tables = self.get_tables()
         if len(self.tables) == 0:
             self.create_users_table()
             self.create_groups_table()
-            self.create_scheldule_table()
+            self.create_schedule_table()
             self.create_session_table()
+            print('start')
             self.fill_groups_table()
+            print(1)
             self.groups = tuple(self.get_groups())
-            self.fill_scheldule_table()
+            self.fill_schedule_table()
+            print(2)
             self.fill_session_table()
+            print('end')
             self.create_notification_table()
         self.groups = tuple(self.get_groups())
 
     def get_tables(self):
-        '''Возвращает список таблиц'''
+        """Возвращает список таблиц"""
         con = connect(self.db_name)
         cur = con.cursor()
         cur.execute("SELECT name FROM sqlite_master " +
@@ -58,54 +62,54 @@ class Database:
     # Users table api
 
     def create_users_table(self):
-        '''Создание таблицы пользователей.'''
+        """Создание таблицы пользователей."""
         con = connect(self.db_name)
         cur = con.cursor()
         cur.execute("CREATE TABLE IF NOT EXISTS " +
                     "Users(id INTEGER, name CHAR(20), group_name CHAR(20))")
         con.close()
 
-    def insert_user(self, id, name, group=None):
-        '''Вставка пользователя в таблицу.'''
+    def insert_user(self, user_id, name, group=None):
+        """Вставка пользователя в таблицу."""
         con = connect(self.db_name)
         cur = con.cursor()
         cur.execute("INSERT INTO Users (id, name, group_name) " +
                     "VALUES (?, ?, ?)",
-                    [id, name, group])
+                    [user_id, name, group])
         con.commit()
         con.close()
 
-    def check_id(self, id):
-        '''Проверка наличия пользователя в таблице по его id.'''
+    def check_id(self, user_id):
+        """Проверка наличия пользователя в таблице по его id."""
         con = connect(self.db_name)
         cur = con.cursor()
-        cur.execute("SELECT * FROM Users WHERE id=?", [id])
+        cur.execute("SELECT * FROM Users WHERE id=?", [user_id])
         result = cur.fetchone()
         return result
 
-    def get_group(self, id):
-        '''Получение группы пользователя.'''
+    def get_group(self, user_id):
+        """Получение группы пользователя."""
         con = connect(self.db_name)
         cur = con.cursor()
-        cur.execute("SELECT group_name FROM Users WHERE id=?", [id])
+        cur.execute("SELECT group_name FROM Users WHERE id=?", [user_id])
         group = cur.fetchone()
         if group is not None:
             group = group[0]
         return group
 
-    def update_group(self, id, group):
-        '''Изменение группы пользователя.'''
+    def update_group(self, user_id, group):
+        """Изменение группы пользователя."""
         con = connect(self.db_name)
         cur = con.cursor()
         cur.execute('UPDATE Users SET group_name=? WHERE id=?',
-                    [group, id])
+                    [group, user_id])
         con.commit()
         con.close()
 
     # Groups table api
 
     def create_groups_table(self):
-        '''Создание таблицы групп.'''
+        """Создание таблицы групп."""
         con = connect(self.db_name)
         cur = con.cursor()
         cur.execute("CREATE TABLE IF NOT EXISTS " +
@@ -115,7 +119,7 @@ class Database:
         con.close()
 
     def fill_groups_table(self):
-        '''Заполнение таблицы групп.'''
+        """Заполнение таблицы групп."""
         con = connect(self.db_name)
         cur = con.cursor()
         group_list = self._parse_groups()
@@ -126,7 +130,7 @@ class Database:
         con.close()
 
     def _parse_groups(self):
-        '''Парсинг списка групп с сайта МАИ.'''
+        """Парсинг списка групп с сайта МАИ."""
         target_url = 'https://www.mai.ru/education/schedule'
         request = get(target_url)
         soup = BeautifulSoup(request.text, "html.parser")
@@ -137,7 +141,7 @@ class Database:
         return groups
 
     def get_groups(self):
-        '''Получить список групп.'''
+        """Получить список групп."""
         con = connect(self.db_name)
         cur = con.cursor()
         groups_list = []
@@ -149,7 +153,7 @@ class Database:
     # Notifiaction table api
 
     def create_notification_table(self):
-        '''Создание таблицы уведомлений.'''
+        """Создание таблицы уведомлений."""
         con = connect(self.db_name)
         cur = con.cursor()
         cur.execute("CREATE TABLE IF NOT EXISTS " +
@@ -161,7 +165,7 @@ class Database:
         con.close()
 
     def insert_note(self, user_id, note, date):
-        '''Добавление уведомления.'''
+        """Добавление уведомления."""
         con = connect(self.db_name)
         cur = con.cursor()
         cur.execute("INSERT INTO Notification " +
@@ -172,7 +176,7 @@ class Database:
         con.close()
 
     def get_notes(self):
-        '''Получение списка уведомлений.'''
+        """Получение списка уведомлений."""
         con = connect(self.db_name)
         cur = con.cursor()
         notes_list = []
@@ -182,16 +186,16 @@ class Database:
         return notes_list
 
     def delete_note(self, note_id):
-        '''Удаление уведомления.'''
+        """Удаление уведомления."""
         con = connect(self.db_name)
         cur = con.cursor()
         cur.execute("DELETE FROM Notification WHERE id=?", [note_id])
-        cur.commit()
+        con.commit()
         con.close()
 
     # Session table api
     def create_session_table(self):
-        '''Создание таблицы расписания сессии.'''
+        """Создание таблицы расписания сессии."""
         con = connect(self.db_name)
         cur = con.cursor()
         cur.execute("CREATE TABLE IF NOT EXISTS " +
@@ -207,7 +211,7 @@ class Database:
         con.close()
 
     def fill_session_table(self):
-        '''Заполнение таблицы расписания сессии.'''
+        """Заполнение таблицы расписания сессии."""
         con = connect(self.db_name)
         cur = con.cursor()
         for group in self._parse_examining_groups():
@@ -245,7 +249,7 @@ class Database:
         con.close()
 
     def _parse_examining_groups(self):
-        '''Парсинг групп, имеющих экзамен.'''
+        """Парсинг групп, имеющих экзамен."""
         target_url = 'https://www.mai.ru/education/schedule/session'
         request = get(target_url)
         soup = BeautifulSoup(request.text, "html.parser")
@@ -256,7 +260,7 @@ class Database:
         return groups
 
     def _parse_session(self, group_name):
-        '''Парсинг экзаменов.'''
+        """Парсинг экзаменов."""
         target_url = "https://www.mai.ru/" +\
                      "education/schedule/session.php?group=" +\
                      group_name
@@ -271,7 +275,7 @@ class Database:
         return exams
 
     def get_session(self, group):
-        '''Возвращает все экзамены для данной группы.'''
+        """Возвращает все экзамены для данной группы."""
         con = connect(self.db_name)
         cur = con.cursor()
         result = []
@@ -281,18 +285,18 @@ class Database:
                                [group]):
             result.append(list(row))
         con.close()
-        if result == []:
+        if not result:
             return None
         return result
 
-    # Scheldule table api
+    # Schedule table api
 
-    def create_scheldule_table(self):
-        '''Создание таблицы расписания.'''
+    def create_schedule_table(self):
+        """Создание таблицы расписания."""
         con = connect(self.db_name)
         cur = con.cursor()
         cur.execute("CREATE TABLE IF NOT EXISTS " +
-                    "Scheldule(" +
+                    "Schedule(" +
                     "id INTEGER  NOT NULL PRIMARY KEY AUTOINCREMENT, " +
                     "group_name CHAR(20), " +
                     "week_type INTEGER, " +
@@ -305,17 +309,17 @@ class Database:
         con.commit()
         con.close()
 
-    def fill_scheldule_table(self):
-        '''Заполнение таблицы расписания.'''
+    def fill_schedule_table(self):
+        """Заполнение таблицы расписания."""
         for group in self.groups:
-            down_week = self._parse_scheldule(group, 4)
-            up_week = self._parse_scheldule(group, 5)
+            down_week = self._parse_schedule(group, 4)
+            up_week = self._parse_schedule(group, 5)
 
             self._fill_week(up_week, group, 0)
             self._fill_week(down_week, group, 1)
 
-    def _parse_scheldule(self, group_name, week_number):
-        '''Парсинг расписания.'''
+    def _parse_schedule(self, group_name, week_number):
+        """Парсинг расписания."""
         target_url = "http://www.mai.ru/" +\
                      "education/schedule/detail.php?group=" +\
                      group_name + '&week=' + str(week_number)
@@ -329,7 +333,7 @@ class Database:
         return result
 
     def _fill_week(self, week, group, week_type):
-        '''Вставка в таблицу расписания на неделю.'''
+        """Вставка в таблицу расписания на неделю."""
         for day in week:
             day, date = self._sepate_by_lessons(day)
             for lesson in day:
@@ -349,16 +353,16 @@ class Database:
                     teacher = ''
                 else:
                     teacher = lesson[2]
-                    self._fill_day(group, week_type, date, time,
-                                   subject, location, lesson_type, teacher)
+                self._fill_day(group, week_type, date, time,
+                               subject, location, lesson_type, teacher)
 
     def _sepate_by_lessons(self, day):
-        '''Преобразовывает массив с расписанием.
+        """Преобразовывает массив с расписанием.
 
         Получает на вход массив с расписанием на день с сайта МАИ.
         Преобразует в двумерный массив: [[занятие1], [занятие2]...].
 
-        '''
+        """
         date = day[0][-2:]
         day.pop(0)
         day_str = '|'.join(day)
@@ -377,10 +381,10 @@ class Database:
 
     def _fill_day(self, group, week_type, date, time, subject, location,
                   lesson_type='', teacher=''):
-        '''Вставка в таблицу расписания на определенный день.'''
+        """Вставка в таблицу расписания на определенный день."""
         con = connect(self.db_name)
         cur = con.cursor()
-        cur.execute("INSERT INTO Scheldule " +
+        cur.execute("INSERT INTO Schedule " +
                     "(group_name, week_type, day," +
                     " time, lesson_type, subject, " +
                     "teacher, location) " +
@@ -390,26 +394,26 @@ class Database:
         con.commit()
         con.close()
 
-    def get_week_scheldule(self, group, week_type):
-        '''Возвращает расписание на неделю (верхнюю или нижнюю.'''
+    def get_week_schedule(self, group, week_type):
+        """Возвращает расписание на неделю (верхнюю или нижнюю."""
         con = connect(self.db_name)
         cur = con.cursor()
         result = []
         for row in cur.execute("SELECT day, time, lesson_type, subject, " +
-                               "teacher, location FROM Scheldule WHERE " +
+                               "teacher, location FROM Schedule WHERE " +
                                "group_name=? AND week_type=?",
                                [group, week_type]):
             result.append(list(row))
         con.close()
         return result
 
-    def get_day_scheldule(self, group, week_type, day):
-        '''Возвращает расписание на заданный день.'''
+    def get_day_schedule(self, group, week_type, day):
+        """Возвращает расписание на заданный день."""
         con = connect(self.db_name)
         cur = con.cursor()
         result = []
         for row in cur.execute("SELECT day, time, lesson_type, subject," +
-                               "teacher, location FROM Scheldule WHERE " +
+                               "teacher, location FROM Schedule WHERE " +
                                "group_name=? AND week_type=? AND day=?",
                                [group, week_type, day]):
             result.append(list(row))

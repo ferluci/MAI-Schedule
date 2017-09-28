@@ -21,7 +21,7 @@
 # SOFTWARE.
 
 
-TOKEN = ''
+TOKEN = '320017070:AAGgaB6LwkXssOPIXV_f9oAh3eSP7-UcX8o'
 DB_NAME = 'bot.db'
 DEVELOPER_CHAT_ID = 120803423
 
@@ -35,14 +35,17 @@ DEVELOPER_CHAT_ID = 120803423
 День
 '''
 START_YEAR = 2017
-START_MONTH = 2
-START_DAY = 6
+START_MONTH = 9
+START_DAY = 4
 
 
 # Даты сессий хранятся в массивах в формате: месяц, день
 WINTER_SESSION_DATE = [1, 9]
 SUMMER_SESSION_DATE = [6, 8]
 
+
+except_symb = {'БКИ':'Бки', 'БК':'Бк', 'БкИ':'Бки', 'СКИ':'Ски', 'СЦК':'Сцк',
+              'СЦ':'Сц', 'СцК':'Сцк', 'МКИ':'Мки', 'МК':'Мк', 'МкИ':'Мки'}
 
 get_group = '''
 Напиши мне свою группу. Полностью. Со всеми цифрами и буквами.\n
