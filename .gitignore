@@ -3,4 +3,8 @@ __pycache__/
 *.py[cod]
 
 # Local db
+*.sqlite3
 *.db
+
+# Secret settings
+secret_settings.py

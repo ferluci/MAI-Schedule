@@ -22,13 +22,15 @@
 
 """
 Главный исполняемый файл.
+Для работы необходимо создать файл secret_settings.py в той же
+директории, в которой находится данный файл. В secret_settings.py
+необходимо добавить 2 строчки
+TOKEN = Ваш токен
+DB_NAME = имя вашей базы данных, например bot.sqlite3
+
+Описание модулей;
 из db_manage используется класс Database для работы с бд
 из dates используются функции для работы с датой и временем
-
-Важное замечание:
-В базе данных хранится лишь 2 недели. Верхняя и нижняя.
-Тип текущей недели определяется в функции get_current_week_type()
-из модуля dates.py
 
 """
 
@@ -37,8 +39,9 @@ import telebot
 import db_manage
 import config
 import dates
+import secret_settings
 
-bot = telebot.TeleBot(config.TOKEN)
+bot = telebot.TeleBot(secret_settings.TOKEN)
 
 
 @bot.message_handler(commands=['start'])
@@ -65,7 +68,7 @@ def start(message):
         group = db.get_group(message.chat.id)
 
     if group is None:
-        change_group_pre(message)
+        change_group_start(message)
         return
     else:
         bot.send_message(message.chat.id, config.already_registered)
@@ -130,7 +133,7 @@ def schedule_prettify(schedule):
 
 @bot.message_handler(func=lambda message:
                      message.text == 'Следующая пара')
-def next_less(message):
+def get_next_lesson(message):
     """Функция отвечающая за вывод следующего занятия.
 
     Проверяет на каждое занятие из сегодняшнего дня, началось ли оно,
@@ -182,7 +185,7 @@ def next_less(message):
 
 @bot.message_handler(func=lambda message:
                      message.text == 'Следующая лабораторная')
-def next_lab(message):
+def get_next_laboratory(message):
     """Функция отвечающая за вывод следующей лабораторной.
 
     Проверяет на каждое занятие из сегодняшнего дня, началось ли оно и
@@ -244,7 +247,7 @@ def get_schedule(message):
 
 @bot.message_handler(func=lambda message:
                      message.text == 'На сегодня')
-def today_schedule(message):
+def get_today_schedule(message):
     """Вывод расписания на сегодня.
 
     Если сегодня занятий нету, выводится соответствующее сообщение.
@@ -269,7 +272,7 @@ def today_schedule(message):
 
 @bot.message_handler(func=lambda message:
                      message.text == 'На завтра')
-def tomorrow_schedule(message):
+def get_tomorrow_schedule(message):
     """Вывод расписания на завтра.
 
     Если завтра занятий нету, выводится соответствующее сообщение.
@@ -297,7 +300,7 @@ def tomorrow_schedule(message):
 
 @bot.message_handler(func=lambda message:
                      message.text == 'На эту неделю')
-def current_week_schedule(message):
+def get_current_week_schedule(message):
     """Вывод расписания на эту неделю.
 
     Если на этой неделе занятий нету, выводится соответствующее сообщение.
@@ -325,7 +328,7 @@ def current_week_schedule(message):
 
 @bot.message_handler(func=lambda message:
                      message.text == 'На следующую неделю')
-def next_week_schedule(message):
+def get_next_week_schedule(message):
     """Вывод расписания на следующую неделю.
 
     Если на следующей неделе занятий нету, выводится соответствующее сообщение.
@@ -373,7 +376,7 @@ def remaining_days(message):
 
 
 @bot.message_handler(func=lambda message: message.text == 'Ближайший экзамен')
-def nearest_exam(message):
+def get_nearest_exam(message):
     """Вывод информации о ближайшем экзамене.
 
     Проверятеся дата каждого экзамена. Если он прошел
@@ -397,7 +400,7 @@ def nearest_exam(message):
 
 
 @bot.message_handler(func=lambda message: message.text == 'Расписание сессии')
-def exam_schedule(message):
+def get_exam_schedule(message):
     """Вывод всех экзаменов.
 
     Если список экзаменов пуст, то выводится информация об этом.
@@ -438,7 +441,7 @@ def settings(message):
 
 @bot.message_handler(func=lambda message:
                      message.text == '📝 Изменить группу')
-def change_group_pre(message):
+def change_group_start(message):
     """Функция изменения группы.
 
     При нажатии на кнопку "📝 Изменить группу", пользователь
@@ -453,10 +456,10 @@ def change_group_pre(message):
     message = bot.send_message(message.chat.id, config.get_group)
     # Регистрация следующего handler'a. Т.е. все сообщения пользователя
     # будут обрабатываться функцией change_group_post
-    bot.register_next_step_handler(message, change_group_post)
+    bot.register_next_step_handler(message, change_group_end())
 
 
-def change_group_post(message):
+def change_group_end(message):
     """ Ввод группы.
 
     Формируется список возможных групп, после чего производится проверка
@@ -482,19 +485,19 @@ def change_group_post(message):
                           groups_list[-1][groups_list[-1].index('0') + 1:]
         groups_list.append(group)
 
-    def strings_correction(strings_list, pattern, correct_pattern):
+    def _strings_correction(strings_list, pattern, correct_pattern):
         """Замена строки - pattern на строку - correct_pattern."""
         pattern = re.compile(pattern)
-        for i in range(len(list)):
+        for i in range(len(strings_list)):
             strings_list[i] = pattern.sub(correct_pattern, strings_list[i])
         return list
 
     # Сообщение пользователя приводится к верхнему регистру, но
     # если у некоторых групп ряд символов в нижнем регистре, поэтому,
     # необходимо их изменить.
-    for key in config.except_symb:
+    for key in config.EXCEPT_SYMBS:
         if key in group:
-            groups_list = strings_correction(groups_list, key, config.except_symb[key])
+            groups_list = _strings_correction(groups_list, key, config.EXCEPT_SYMBS[key])
 
     for group in groups_list:
         if group in db.groups:
@@ -504,7 +507,7 @@ def change_group_post(message):
             return
 
     bot.send_message(message.chat.id, 'Вы где-то ошиблись, попробуйте еще раз')
-    bot.register_next_step_handler(message, change_group_post)
+    bot.register_next_step_handler(message, change_group_end())
     return
 
 
@@ -537,5 +540,5 @@ def about(message):
 
 
 if __name__ == '__main__':
-    db = db_manage.Database(config.DB_NAME)
+    db = db_manage.Database(secret_settings.DB_NAME)
     bot.polling(none_stop=True)

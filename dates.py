@@ -45,9 +45,9 @@ def get_current_week_type():
     up_week_check = _get_up_week_check()
     current_week_number = datetime.isocalendar(today)[1]
     if current_week_number % 2 == 0 and up_week_check == 0:
-        week_type = 0
-    else:
         week_type = 1
+    else:
+        week_type = 0
 
     return week_type
 

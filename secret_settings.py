@@ -1,0 +1,2 @@
+TOKEN = '320017070:AAGgaB6LwkXssOPIXV_f9oAh3eSP7-UcX8o'
+DB_NAME = 'bot.sqlite3'

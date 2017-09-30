@@ -23,9 +23,8 @@
 
 import re
 from time import sleep
-from requests import get
 from sqlite3 import connect
-from bs4 import BeautifulSoup
+import parser
 
 
 class Database:
@@ -33,6 +32,9 @@ class Database:
     def __init__(self, db_name):
         self.db_name = db_name
         self.tables = self.get_tables()
+
+        # Если таблицы отсутствуют в базе данных, то они создаются
+        # и автоматически заполняются
         if len(self.tables) == 0:
             self.create_users_table()
             self.create_groups_table()
@@ -118,23 +120,13 @@ class Database:
         """Заполнение таблицы групп."""
         con = connect(self.db_name)
         cur = con.cursor()
-        group_list = self._parse_groups()
+        group_list = parser.parse_groups()
         for group in group_list:
             cur.execute('INSERT INTO Groups (group_name) VALUES (?)',
                         [group])
         con.commit()
         con.close()
 
-    def _parse_groups(self):
-        """Парсинг списка групп с сайта МАИ."""
-        target_url = 'https://www.mai.ru/education/schedule'
-        request = get(target_url)
-        soup = BeautifulSoup(request.text, "html.parser")
-        groups = []
-        for group in soup.find_all('a', class_="sc-group-item"):
-            group = group.get_text()
-            groups.append(group)
-        return groups
 
     def get_groups(self):
         """Получить список групп."""
@@ -146,7 +138,7 @@ class Database:
         con.close()
         return groups_list
 
-    # Notifiaction table api
+    # Notification table api
 
     def create_notification_table(self):
         """Создание таблицы уведомлений."""
@@ -190,6 +182,7 @@ class Database:
         con.close()
 
     # Session table api
+
     def create_session_table(self):
         """Создание таблицы расписания сессии."""
         con = connect(self.db_name)
@@ -210,8 +203,8 @@ class Database:
         """Заполнение таблицы расписания сессии."""
         con = connect(self.db_name)
         cur = con.cursor()
-        for group in self._parse_examining_groups():
-            session = self._parse_session(group)
+        for group in parser.parse_examining_groups():
+            session = parser.parse_session(group)
             for exam in session:
                 # Иногда на сайте не указывается имя преподавателя,
                 # из-за чего необходимо выполнять данную проверку, дабы
@@ -243,32 +236,6 @@ class Database:
             sleep(0.5)
         con.commit()
         con.close()
-
-    def _parse_examining_groups(self):
-        """Парсинг групп, имеющих экзамен."""
-        target_url = 'https://www.mai.ru/education/schedule/session'
-        request = get(target_url)
-        soup = BeautifulSoup(request.text, "html.parser")
-        groups = []
-        for group in soup.find_all('a', class_="sc-group-item"):
-            group = group.get_text()
-            groups.append(group)
-        return groups
-
-    def _parse_session(self, group_name):
-        """Парсинг экзаменов."""
-        target_url = "https://www.mai.ru/" +\
-                     "education/schedule/session.php?group=" +\
-                     group_name
-        request = get(target_url)
-        soup = BeautifulSoup(request.text, "html.parser")
-        exams = []
-        for exam in soup.find_all('div', class_="sc-container"):
-            exam = exam.get_text().split('\n')
-            for i in range(exam.count('')):
-                exam.pop(exam.index(''))
-            exams.append(exam)
-        return exams
 
     def get_session(self, group):
         """Возвращает все экзамены для данной группы."""
@@ -308,25 +275,11 @@ class Database:
     def fill_schedule_table(self):
         """Заполнение таблицы расписания."""
         for group in self.groups:
-            down_week = self._parse_schedule(group, 4)
-            up_week = self._parse_schedule(group, 5)
+            down_week = parser.parse_schedule(group, 4)
+            up_week = parser.parse_schedule(group, 5)
 
             self._fill_week(up_week, group, 0)
             self._fill_week(down_week, group, 1)
-
-    def _parse_schedule(self, group_name, week_number):
-        """Парсинг расписания."""
-        target_url = "http://www.mai.ru/" +\
-                     "education/schedule/detail.php?group=" +\
-                     group_name + '&week=' + str(week_number)
-        request = get(target_url)
-        soup = BeautifulSoup(request.text, "html.parser")
-        result = []
-        for day in soup.find_all('div', class_="sc-container"):
-            day = day.get_text().split('\n')
-            day = [x for x in day if x != '']
-            result.append(day)
-        return result
 
     def _fill_week(self, week, group, week_type):
         """Вставка в таблицу расписания на неделю."""
@@ -391,7 +344,7 @@ class Database:
         con.close()
 
     def get_week_schedule(self, group, week_type):
-        """Возвращает расписание на неделю (верхнюю или нижнюю."""
+        """Возвращает расписание на неделю (верхнюю или нижнюю)."""
         con = connect(self.db_name)
         cur = con.cursor()
         result = []
