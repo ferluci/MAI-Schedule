@@ -62,7 +62,9 @@ already_registered = '''
 
 contacts = '''
 Создатель - @vakakvaka\nРепозиторий проекта на git\'е -
-https://github.com/Ferluci/MAI-Schedule
+https://github.com/Ferluci/MAI-Schedule \n
+Репозиторий Лямбды: 
+https://github.com/lambdafrela
 '''
 
 session_empty = '''
