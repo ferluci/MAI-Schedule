@@ -50,11 +50,11 @@ def start(message):
 
     Производится проверка наличия id пользователя в базе данных.
     Если он отсутствует, то в бд создается строка с его именем, после чего
-    вызывается функция change_group_pre(), отвечающая за ввод группы
+    вызывается функция change_group_start(), отвечающая за ввод группы
     пользователя.
 
     Если же пользователь существует, но нет группы, то также вызывается
-    функция change_group_pre().
+    функция change_group_start().
 
     Иначе, выводится сообщение о том, что пользователь уже зарегестрирован.
 
@@ -458,7 +458,7 @@ def change_group_start(message):
     message = bot.send_message(message.chat.id, config.get_group)
     # Регистрация следующего handler'a. Т.е. все сообщения пользователя
     # будут обрабатываться функцией change_group_post
-    bot.register_next_step_handler(message, change_group_end())
+    bot.register_next_step_handler(message, change_group_end)
 
 
 def change_group_end(message):
@@ -472,45 +472,48 @@ def change_group_end(message):
     о том, что он ошибся при вводе.
 
     """
-    group = message.text.upper()
-    groups_list = [group]
+    try:
+        group = message.text.upper()
+        groups_list = [group]
 
-    if message.text == 'Назад':
-        help(message)
-        return
-
-    # Многие вводят вместо О - 0
-    # Данный цикл генерирует различные комбинации имени группы,
-    # где заместо нуля ставится буква О
-    for i in range(group.count('0')):
-        group = groups_list[-1][:groups_list[-1].index('0')] + 'О' +\
-                          groups_list[-1][groups_list[-1].index('0') + 1:]
-        groups_list.append(group)
-
-    def _strings_correction(strings_list, pattern, correct_pattern):
-        """Замена строки - pattern на строку - correct_pattern."""
-        pattern = re.compile(pattern)
-        for i in range(len(strings_list)):
-            strings_list[i] = pattern.sub(correct_pattern, strings_list[i])
-        return list
-
-    # Сообщение пользователя приводится к верхнему регистру, но
-    # если у некоторых групп ряд символов в нижнем регистре, поэтому,
-    # необходимо их изменить.
-    for key in config.EXCEPT_SYMBS:
-        if key in group:
-            groups_list = _strings_correction(groups_list, key, config.EXCEPT_SYMBS[key])
-
-    for group in groups_list:
-        if group in db.groups:
-            db.update_group(message.chat.id, group)
-            bot.send_message(message.chat.id, config.completed)
+        if message.text == 'Назад':
             help(message)
             return
 
-    bot.send_message(message.chat.id, 'Вы где-то ошиблись, попробуйте еще раз')
-    bot.register_next_step_handler(message, change_group_end())
-    return
+        # Многие вводят вместо О - 0
+        # Данный цикл генерирует различные комбинации имени группы,
+        # где заместо нуля ставится буква О
+        for i in range(group.count('0')):
+            group = groups_list[-1][:groups_list[-1].index('0')] + 'О' +\
+                              groups_list[-1][groups_list[-1].index('0') + 1:]
+            groups_list.append(group)
+
+        def _strings_correction(strings_list, pattern, correct_pattern):
+            """Замена строки - pattern на строку - correct_pattern."""
+            pattern = re.compile(pattern)
+            for i in range(len(strings_list)):
+                strings_list[i] = pattern.sub(correct_pattern, strings_list[i])
+            return list
+
+        # Сообщение пользователя приводится к верхнему регистру, но
+        # если у некоторых групп ряд символов в нижнем регистре, поэтому,
+        # необходимо их изменить.
+        for key in config.EXCEPT_SYMBS:
+            if key in group:
+                groups_list = _strings_correction(groups_list, key, config.EXCEPT_SYMBS[key])
+
+        for group in groups_list:
+            if group in db.groups:
+                db.update_group(message.chat.id, group)
+                bot.send_message(message.chat.id, config.completed)
+                help(message)
+                return
+
+        bot.send_message(message.chat.id, 'Вы где-то ошиблись, попробуйте еще раз')
+        bot.register_next_step_handler(message, change_group_end())
+        return
+    except Exception:
+        bot.send_message(message.chat.id, config.something_going_wrong)
 
 
 @bot.message_handler(func=lambda message:

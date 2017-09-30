@@ -63,7 +63,7 @@ already_registered = '''
 contacts = '''
 Создатель - @vakakvaka\nРепозиторий проекта на git\'е -
 https://github.com/Ferluci/MAI-Schedule \n
-Репозиторий Лямбды: 
+Репозиторий Лямбды:
 https://github.com/lambdafrela
 '''
 
@@ -85,6 +85,10 @@ day_schedule_empty = '''
 week_schedule_empty = '''
 Кажется у вас нет занятий,
 если это не так, то свяжитесь с разработчиком @vakakvaka
+'''
+
+something_going_wrong = '''
+Что-то пошло не так
 '''
 
 completed = 'Успешно!'
