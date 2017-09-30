@@ -110,8 +110,10 @@ def schedule_prettify(schedule):
         location = '📍 ' + schedule[-1] + '\n'
         if 'Кафедра' in schedule[-2]:
             teacher = ''
-        else:
+        elif schedule[-2] != '':
             teacher = '👤 ' + schedule[-2] + '\n'
+        else:
+            teacher = ''
         subject = '📝 ' + schedule[-3] + '\n'
 
         for elem in schedule:
