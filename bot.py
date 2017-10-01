@@ -117,10 +117,12 @@ def schedule_prettify(schedule):
         subject = '📝 ' + schedule[-3] + '\n'
 
         for elem in schedule:
+
             if re.match(r'\d{2}:\d{2}', elem):
                 time = '⌚ ' + elem + '\n'
             else:
                 time = ''
+
             if re.match(r'\d{2}[.]\d{2}', elem):
                 date = elem
                 if len(date) > 5:

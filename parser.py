@@ -35,7 +35,7 @@ def _schedule_parser(target_url):
     return result
 
 
-def parse_schedule(group_name, week_number):
+def parse_academic_schedule(group_name, week_number):
     """Парсинг расписания."""
     target_url = "http://www.mai.ru/" + \
                  "education/schedule/detail.php?group=" + \
@@ -43,7 +43,7 @@ def parse_schedule(group_name, week_number):
     return _schedule_parser(target_url)
 
 
-def parse_session(group_name):
+def parse_session_schedule(group_name):
     """Парсинг экзаменов."""
     target_url = "https://www.mai.ru/" + \
                  "education/schedule/session.php?group=" + \

@@ -27,6 +27,18 @@ from sqlite3 import connect
 import parser
 
 
+def db_connect(func):
+    def wrapped(self, *args, **kwargs):
+        con = connect(self.db_name)
+        cur = con.cursor()
+        result = func(self, *args, **kwargs, cur=cur)
+        con.commit()
+        con.close()
+        return result
+
+    return wrapped
+
+
 class Database:
     """Класс обеспечивающий работу с базой данных."""
     def __init__(self, db_name):
@@ -47,146 +59,115 @@ class Database:
             self.create_notification_table()
         self.groups = tuple(self.get_groups())
 
-    def get_tables(self):
+    @db_connect
+    def get_tables(self, cur):
         """Возвращает список таблиц"""
-        con = connect(self.db_name)
-        cur = con.cursor()
         cur.execute("SELECT name FROM sqlite_master " +
                     "WHERE type = 'table';")
         result = cur.fetchall()
-        con.close()
         return result
 
     # Users table api
 
-    def create_users_table(self):
+    @db_connect
+    def create_users_table(self, cur):
         """Создание таблицы пользователей."""
-        con = connect(self.db_name)
-        cur = con.cursor()
         cur.execute("CREATE TABLE IF NOT EXISTS " +
                     "Users(id INTEGER, name CHAR(20), group_name CHAR(20))")
-        con.close()
 
-    def insert_user(self, user_id, name, group=None):
+    @db_connect
+    def insert_user(self, user_id, name, group=None, cur=None):
         """Вставка пользователя в таблицу."""
-        con = connect(self.db_name)
-        cur = con.cursor()
         cur.execute("INSERT INTO Users (id, name, group_name) " +
                     "VALUES (?, ?, ?)",
                     [user_id, name, group])
-        con.commit()
-        con.close()
 
-    def check_id(self, user_id):
+    @db_connect
+    def check_id(self, user_id, cur=None):
         """Проверка наличия пользователя в таблице по его id."""
-        con = connect(self.db_name)
-        cur = con.cursor()
+
         cur.execute("SELECT * FROM Users WHERE id=?", [user_id])
         result = cur.fetchone()
         return result
 
-    def get_group(self, user_id):
+    @db_connect
+    def get_group(self, user_id, cur=None):
         """Получение группы пользователя."""
-        con = connect(self.db_name)
-        cur = con.cursor()
         cur.execute("SELECT group_name FROM Users WHERE id=?", [user_id])
         group = cur.fetchone()
         if group is not None:
             group = group[0]
         return group
 
-    def update_group(self, user_id, group):
+    @db_connect
+    def update_group(self, user_id, group, cur=None):
         """Изменение группы пользователя."""
-        con = connect(self.db_name)
-        cur = con.cursor()
         cur.execute('UPDATE Users SET group_name=? WHERE id=?',
                     [group, user_id])
-        con.commit()
-        con.close()
 
     # Groups table api
 
-    def create_groups_table(self):
+    @db_connect
+    def create_groups_table(self, cur=None):
         """Создание таблицы групп."""
-        con = connect(self.db_name)
-        cur = con.cursor()
         cur.execute("CREATE TABLE IF NOT EXISTS " +
                     "Groups(id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, " +
                     "group_name CHAR(20))")
-        con.commit()
-        con.close()
 
-    def fill_groups_table(self):
+    @db_connect
+    def fill_groups_table(self, cur=None):
         """Заполнение таблицы групп."""
-        con = connect(self.db_name)
-        cur = con.cursor()
         group_list = parser.parse_groups()
         for group in group_list:
             cur.execute('INSERT INTO Groups (group_name) VALUES (?)',
                         [group])
-        con.commit()
-        con.close()
 
-
-    def get_groups(self):
+    @db_connect
+    def get_groups(self, cur=None):
         """Получить список групп."""
-        con = connect(self.db_name)
-        cur = con.cursor()
         groups_list = []
         for row in cur.execute("SELECT group_name FROM Groups"):
             groups_list.append(row[0])
-        con.close()
         return groups_list
 
     # Notification table api
 
-    def create_notification_table(self):
+    @db_connect
+    def create_notification_table(self, cur=None):
         """Создание таблицы уведомлений."""
-        con = connect(self.db_name)
-        cur = con.cursor()
         cur.execute("CREATE TABLE IF NOT EXISTS " +
                     "Notification(" +
                     "id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT," +
                     "user_id INTEGER," +
                     "note TEXT" +
                     "date CHAR(20))")
-        con.close()
 
-    def insert_note(self, user_id, note, date):
+    @db_connect
+    def insert_note(self, user_id, note, date, cur=None):
         """Добавление уведомления."""
-        con = connect(self.db_name)
-        cur = con.cursor()
         cur.execute("INSERT INTO Notification " +
                     "(user_id, note, date)" +
                     "VALUES (?, ?, ?)",
                     [user_id, note, date])
-        con.commit()
-        con.close()
 
-    def get_notes(self):
+    @db_connect
+    def get_notes(self, cur=None):
         """Получение списка уведомлений."""
-        con = connect(self.db_name)
-        cur = con.cursor()
         notes_list = []
         for row in cur.execute("SELECT * FROM Notification"):
             notes_list.append(row)
-        con.close()
         return notes_list
 
-    def delete_note(self, note_id):
+    @db_connect
+    def delete_note(self, note_id, cur=None):
         """Удаление уведомления."""
-        con = connect(self.db_name)
-        cur = con.cursor()
         cur.execute("DELETE FROM Notification WHERE id=?", [note_id])
-        con.commit()
-        con.close()
 
     # Session table api
 
-    def create_session_table(self):
+    @db_connect
+    def create_session_table(self, cur=None):
         """Создание таблицы расписания сессии."""
-        con = connect(self.db_name)
-        cur = con.cursor()
         cur.execute("CREATE TABLE IF NOT EXISTS " +
                     "Session(" +
                     "id INTEGER  NOT NULL PRIMARY KEY AUTOINCREMENT, " +
@@ -196,15 +177,12 @@ class Database:
                     "subject CHAR(70), " +
                     "teacher CHAR(70), " +
                     "location CHAR(25))")
-        con.commit()
-        con.close()
 
-    def fill_session_table(self):
+    @db_connect
+    def fill_session_table(self, cur=None):
         """Заполнение таблицы расписания сессии."""
-        con = connect(self.db_name)
-        cur = con.cursor()
         for group in parser.parse_examining_groups():
-            session = parser.parse_session(group)
+            session = parser.parse_session_schedule(group)
             for exam in session:
                 # Иногда на сайте не указывается имя преподавателя,
                 # из-за чего необходимо выполнять данную проверку, дабы
@@ -231,33 +209,27 @@ class Database:
                                 " subject, location) " +
                                 "VALUES (?, ?, ?, ?, ?)",
                                 [group, date, time, subject, location])
-                con.commit()
 
             sleep(0.5)
-        con.commit()
-        con.close()
 
-    def get_session(self, group):
+    @db_connect
+    def get_session(self, group, cur=None):
         """Возвращает все экзамены для данной группы."""
-        con = connect(self.db_name)
-        cur = con.cursor()
         result = []
         for row in cur.execute("SELECT date, time, subject, "
                                "teacher, location " +
                                "FROM Session WHERE group_name=?",
                                [group]):
             result.append(list(row))
-        con.close()
         if not result:
             return None
         return result
 
     # Schedule table api
 
-    def create_schedule_table(self):
+    @db_connect
+    def create_schedule_table(self, cur=None):
         """Создание таблицы расписания."""
-        con = connect(self.db_name)
-        cur = con.cursor()
         cur.execute("CREATE TABLE IF NOT EXISTS " +
                     "Schedule(" +
                     "id INTEGER  NOT NULL PRIMARY KEY AUTOINCREMENT, " +
@@ -269,14 +241,12 @@ class Database:
                     "subject CHAR(70), " +
                     "teacher CHAR(70), " +
                     "location CHAR(25))")
-        con.commit()
-        con.close()
 
     def fill_schedule_table(self):
         """Заполнение таблицы расписания."""
         for group in self.groups:
-            down_week = parser.parse_schedule(group, 4)
-            up_week = parser.parse_schedule(group, 5)
+            down_week = parser.parse_academic_schedule(group, 4)
+            up_week = parser.parse_academic_schedule(group, 5)
 
             self._fill_week(up_week, group, 0)
             self._fill_week(down_week, group, 1)
@@ -328,11 +298,10 @@ class Database:
             day[i].append(times[i])
         return day, date
 
+    @db_connect
     def _fill_day(self, group, week_type, date, time, subject, location,
-                  lesson_type='', teacher=''):
+                  lesson_type='', teacher='', cur=None):
         """Вставка в таблицу расписания на определенный день."""
-        con = connect(self.db_name)
-        cur = con.cursor()
         cur.execute("INSERT INTO Schedule " +
                     "(group_name, week_type, day," +
                     " time, lesson_type, subject, " +
@@ -340,31 +309,25 @@ class Database:
                     "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
                     [group, week_type, date,
                      time, lesson_type, subject, teacher, location])
-        con.commit()
-        con.close()
 
-    def get_week_schedule(self, group, week_type):
+    @db_connect
+    def get_week_schedule(self, group, week_type, cur=None):
         """Возвращает расписание на неделю (верхнюю или нижнюю)."""
-        con = connect(self.db_name)
-        cur = con.cursor()
         result = []
         for row in cur.execute("SELECT day, time, lesson_type, subject, " +
                                "teacher, location FROM Schedule WHERE " +
                                "group_name=? AND week_type=?",
                                [group, week_type]):
             result.append(list(row))
-        con.close()
         return result
 
-    def get_day_schedule(self, group, week_type, day):
+    @db_connect
+    def get_day_schedule(self, group, week_type, day, cur=None):
         """Возвращает расписание на заданный день."""
-        con = connect(self.db_name)
-        cur = con.cursor()
         result = []
         for row in cur.execute("SELECT day, time, lesson_type, subject," +
                                "teacher, location FROM Schedule WHERE " +
                                "group_name=? AND week_type=? AND day=?",
                                [group, week_type, day]):
             result.append(list(row))
-        con.close()
         return result
