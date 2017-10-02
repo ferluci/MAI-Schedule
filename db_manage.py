@@ -68,6 +68,7 @@ class Database:
         return result
 
     # Users table api
+    # ===============
 
     @db_connect
     def create_users_table(self, cur):
@@ -106,6 +107,7 @@ class Database:
                     [group, user_id])
 
     # Groups table api
+    # ================
 
     @db_connect
     def create_groups_table(self, cur=None):
@@ -131,6 +133,7 @@ class Database:
         return groups_list
 
     # Notification table api
+    # ======================
 
     @db_connect
     def create_notification_table(self, cur=None):
@@ -164,6 +167,7 @@ class Database:
         cur.execute("DELETE FROM Notification WHERE id=?", [note_id])
 
     # Session table api
+    # =================
 
     @db_connect
     def create_session_table(self, cur=None):
@@ -226,6 +230,7 @@ class Database:
         return result
 
     # Schedule table api
+    # ==================
 
     @db_connect
     def create_schedule_table(self, cur=None):
