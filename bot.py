@@ -107,30 +107,28 @@ def schedule_prettify(schedule):
         return 'Сегодня занятий нету'
     else:
         bot_message = ''
-        location = '📍 ' + schedule[-1] + '\n'
-        if 'Кафедра' in schedule[-2]:
-            teacher = ''
-        elif schedule[-2] != '':
-            teacher = '👤 ' + schedule[-2] + '\n'
+        time = '⌚ ' + schedule[1] + '\n'
+
+        if schedule[2]:
+            schedule_type = schedule[2]
+        else:
+            schedule_type = ''
+
+        if schedule[3]:
+            subject = '📝 ' + schedule[-3] + '\n'
+        else:
+            subject = '📝 ' + schedule_type + '\n'
+
+        if schedule[4]:
+            teacher = '👤 ' + schedule[4] + '\n'
         else:
             teacher = ''
-        subject = '📝 ' + schedule[-3] + '\n'
 
-        for elem in schedule:
+        if schedule[5]:
+            location = '📍 ' + schedule[5] + '\n'
+        else:
+            location = ''
 
-            if re.match(r'\d{2}:\d{2}', elem):
-                time = '⌚ ' + elem + '\n'
-            else:
-                time = ''
-
-            if re.match(r'\d{2}[.]\d{2}', elem):
-                date = elem
-                if len(date) > 5:
-                    week_day = date[5:]
-                    date = date[:5] + ' '
-                    bot_message += '=== ' + date +\
-                                   dates.day_full_name(week_day) +\
-                                   ' ===' + '\n'
         bot_message += teacher + subject + time + location + '\n'
         return bot_message
 
@@ -169,7 +167,7 @@ def get_next_lesson(message):
             return
 
     TWO_WEEKS = 14
-    for i in range(TWO_WEEKS):
+    for _ in range(TWO_WEEKS):
         week_day = dates.get_next_week_day(week_day)
         # Если сегодня воскресенье, то при переходе на
         # понедельник, изменится тип недели.
@@ -222,7 +220,7 @@ def get_next_laboratory(message):
     # Если в сегодняшнем дне на найдена лабораторная, то переходим к поиску
     # по всем последующим дням.
     TWO_WEEKS = 14
-    for i in range(TWO_WEEKS):
+    for _ in range(TWO_WEEKS):
         week_day = dates.get_next_week_day(week_day)
         if week_day == 'Пн':
             week_type = dates.get_next_week_type()
@@ -485,7 +483,7 @@ def change_group_end(message):
         # Многие вводят вместо О - 0
         # Данный цикл генерирует различные комбинации имени группы,
         # где заместо нуля ставится буква О
-        for i in range(group.count('0')):
+        for _ in range(group.count('0')):
             group = groups_list[-1][:groups_list[-1].index('0')] + 'О' +\
                               groups_list[-1][groups_list[-1].index('0') + 1:]
             groups_list.append(group)
@@ -493,8 +491,8 @@ def change_group_end(message):
         def _strings_correction(strings_list, pattern, correct_pattern):
             """Замена строки - pattern на строку - correct_pattern."""
             pattern = re.compile(pattern)
-            for i in range(len(strings_list)):
-                strings_list[i] = pattern.sub(correct_pattern, strings_list[i])
+            for _ in range(len(strings_list)):
+                strings_list[_] = pattern.sub(correct_pattern, strings_list[_])
             return list
 
         # Сообщение пользователя приводится к верхнему регистру, но
@@ -512,10 +510,11 @@ def change_group_end(message):
                 return
 
         bot.send_message(message.chat.id, 'Вы где-то ошиблись, попробуйте еще раз')
-        bot.register_next_step_handler(message, change_group_end())
+        bot.register_next_step_handler(message, change_group_end)
         return
     except Exception:
-        bot.send_message(message.chat.id, config.something_going_wrong)
+        bot.send_message(message.chat.id, 'Вы где-то ошиблись, попробуйте еще раз')
+        bot.register_next_step_handler(message, change_group_end)
 
 
 @bot.message_handler(func=lambda message:

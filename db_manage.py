@@ -44,7 +44,7 @@ class Database:
     def __init__(self, db_name):
         self.db_name = db_name
         self.tables = self.get_tables()
-
+        self.create_notification_table()
         # Если таблицы отсутствуют в базе данных, то они создаются
         # и автоматически заполняются
         if len(self.tables) == 0:
@@ -142,16 +142,17 @@ class Database:
                     "Notification(" +
                     "id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT," +
                     "user_id INTEGER," +
-                    "note TEXT" +
-                    "date CHAR(20))")
+                    "note TEXT," +
+                    "date CHAR(20)," +
+                    "time CHAR(5))")
 
     @db_connect
-    def insert_note(self, user_id, note, date, cur=None):
+    def insert_note(self, user_id, note, date, time, cur=None):
         """Добавление уведомления."""
         cur.execute("INSERT INTO Notification " +
-                    "(user_id, note, date)" +
-                    "VALUES (?, ?, ?)",
-                    [user_id, note, date])
+                    "(user_id, note, date, time)" +
+                    "VALUES (?, ?, ?, ?)",
+                    [user_id, note, date, time])
 
     @db_connect
     def get_notes(self, cur=None):
@@ -192,10 +193,10 @@ class Database:
                 # из-за чего необходимо выполнять данную проверку, дабы
                 # не выйти за границы списка.
                 if len(exam) == 6:
-                    date = exam[0]
-                    time = exam[1]
-                    subject = exam[3]
-                    teacher = exam[4]
+                    date = exam[0].replace(u'\xa0', u'')
+                    time = exam[1].replace(u'\xa0', u'')
+                    subject = exam[3].replace(u'\xa0', u'')
+                    teacher = exam[4].replace(u'\xa0', u'')
                     location = exam[5].replace(u'\xa0', u'')
                     cur.execute("INSERT INTO Session " +
                                 "(group_name, date, time," +
@@ -204,9 +205,9 @@ class Database:
                                 [group, date, time,
                                  subject, teacher, location])
                 else:
-                    date = exam[0]
-                    time = exam[1]
-                    subject = exam[3]
+                    date = exam[0].replace(u'\xa0', u'')
+                    time = exam[1].replace(u'\xa0', u'')
+                    subject = exam[3].replace(u'\xa0', u'')
                     location = exam[4].replace(u'\xa0', u'')
                     cur.execute("INSERT INTO Session " +
                                 "(group_name, date, time," +
@@ -240,7 +241,7 @@ class Database:
                     "id INTEGER  NOT NULL PRIMARY KEY AUTOINCREMENT, " +
                     "group_name CHAR(20), " +
                     "week_type INTEGER, " +
-                    "day CHAR(2), " +
+                    "week_day CHAR(2), " +
                     "time CHAR(15), " +
                     "lesson_type CHAR(5), " +
                     "subject CHAR(70), " +
@@ -259,36 +260,33 @@ class Database:
     def _fill_week(self, week, group, week_type):
         """Вставка в таблицу расписания на неделю."""
         for day in week:
-            day, date = self._sepate_by_lessons(day)
+            week_day = day.pop(0)[-2:]
+            day = self._sepate_by_lessons(day)
             for lesson in day:
                 if lesson[0] == 'Военная подготовка':
                     subject = 'Военная подготовка'
-                    time = lesson[-1]
+                    time = lesson[-1].replace(u'\xa0', u'')
                     location = lesson[-2].replace(u'\xa0', u'')
-                    self._fill_day(group, week_type, date,
+                    self._fill_day(group, week_type, week_day,
                                    time, subject, location)
                     continue
 
-                time = lesson[-1]
+                time = lesson[-1].replace(u'\xa0', u'')
                 location = lesson[-2].replace(u'\xa0', u'')
-                lesson_type = lesson[0]
-                subject = lesson[1]
+                lesson_type = lesson[0].replace(u'\xa0', u'')
+                subject = lesson[1].replace(u'\xa0', u'')
                 if len(lesson) == 4:
                     teacher = ''
                 else:
-                    teacher = lesson[2]
-                self._fill_day(group, week_type, date, time,
+                    teacher = lesson[2].replace(u'\xa0', u'')
+                self._fill_day(group, week_type, week_day, time,
                                subject, location, lesson_type, teacher)
 
     def _sepate_by_lessons(self, day):
         """Преобразовывает массив с расписанием.
-
         Получает на вход массив с расписанием на день с сайта МАИ.
         Преобразует в двумерный массив: [[занятие1], [занятие2]...].
-
         """
-        date = day[0][-2:]
-        day.pop(0)
         day_str = '|'.join(day)
         times = re.findall(r'\d{2}:\d{2}\s–\s\d{2}:\d{2}', day_str)
         day = []
@@ -301,25 +299,25 @@ class Database:
                 day.append(lesson)
         for i in range(len(times)):
             day[i].append(times[i])
-        return day, date
+        return day
 
     @db_connect
-    def _fill_day(self, group, week_type, date, time, subject, location,
+    def _fill_day(self, group, week_type, week_day, time, subject, location,
                   lesson_type='', teacher='', cur=None):
         """Вставка в таблицу расписания на определенный день."""
         cur.execute("INSERT INTO Schedule " +
-                    "(group_name, week_type, day," +
+                    "(group_name, week_type, week_day," +
                     " time, lesson_type, subject, " +
                     "teacher, location) " +
                     "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-                    [group, week_type, date,
+                    [group, week_type, week_day,
                      time, lesson_type, subject, teacher, location])
 
     @db_connect
     def get_week_schedule(self, group, week_type, cur=None):
         """Возвращает расписание на неделю (верхнюю или нижнюю)."""
         result = []
-        for row in cur.execute("SELECT day, time, lesson_type, subject, " +
+        for row in cur.execute("SELECT week_day, time, lesson_type, subject, " +
                                "teacher, location FROM Schedule WHERE " +
                                "group_name=? AND week_type=?",
                                [group, week_type]):
@@ -327,12 +325,12 @@ class Database:
         return result
 
     @db_connect
-    def get_day_schedule(self, group, week_type, day, cur=None):
+    def get_day_schedule(self, group, week_type, week_day, cur=None):
         """Возвращает расписание на заданный день."""
         result = []
-        for row in cur.execute("SELECT day, time, lesson_type, subject," +
+        for row in cur.execute("SELECT week_day, time, lesson_type, subject," +
                                "teacher, location FROM Schedule WHERE " +
-                               "group_name=? AND week_type=? AND day=?",
-                               [group, week_type, day]):
+                               "group_name=? AND week_type=? AND week_day=?",
+                               [group, week_type, week_day]):
             result.append(list(row))
         return result
