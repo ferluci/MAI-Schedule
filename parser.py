@@ -13,13 +13,11 @@ def _group_parser(target_url):
 
 
 def parse_groups():
-    """Парсинг списка групп с сайта МАИ."""
     target_url = 'https://www.mai.ru/education/schedule'
     return _group_parser(target_url)
 
 
 def parse_examining_groups():
-    """Парсинг групп, имеющих экзамен."""
     target_url = 'https://www.mai.ru/education/schedule/session'
     return _group_parser(target_url)
 
@@ -36,7 +34,6 @@ def _schedule_parser(target_url):
 
 
 def parse_academic_schedule(group_name, week_number):
-    """Парсинг расписания."""
     target_url = "http://www.mai.ru/" + \
                  "education/schedule/detail.php?group=" + \
                  group_name + '&week=' + str(week_number)
@@ -44,7 +41,6 @@ def parse_academic_schedule(group_name, week_number):
 
 
 def parse_session_schedule(group_name):
-    """Парсинг экзаменов."""
     target_url = "https://www.mai.ru/" + \
                  "education/schedule/session.php?group=" + \
                  group_name

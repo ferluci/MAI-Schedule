@@ -40,11 +40,9 @@ def db_connect(func):
 
 
 class Database:
-    """Класс обеспечивающий работу с базой данных."""
     def __init__(self, db_name):
         self.db_name = db_name
         self.tables = self.get_tables()
-        self.create_notification_table()
         # Если таблицы отсутствуют в базе данных, то они создаются
         # и автоматически заполняются
         if len(self.tables) == 0:
@@ -61,7 +59,6 @@ class Database:
 
     @db_connect
     def get_tables(self, cur):
-        """Возвращает список таблиц"""
         cur.execute("SELECT name FROM sqlite_master " +
                     "WHERE type = 'table';")
         result = cur.fetchall()
@@ -72,13 +69,11 @@ class Database:
 
     @db_connect
     def create_users_table(self, cur):
-        """Создание таблицы пользователей."""
         cur.execute("CREATE TABLE IF NOT EXISTS " +
                     "Users(id INTEGER, name CHAR(20), group_name CHAR(20))")
 
     @db_connect
     def insert_user(self, user_id, name, group=None, cur=None):
-        """Вставка пользователя в таблицу."""
         cur.execute("INSERT INTO Users (id, name, group_name) " +
                     "VALUES (?, ?, ?)",
                     [user_id, name, group])
@@ -93,7 +88,6 @@ class Database:
 
     @db_connect
     def get_group(self, user_id, cur=None):
-        """Получение группы пользователя."""
         cur.execute("SELECT group_name FROM Users WHERE id=?", [user_id])
         group = cur.fetchone()
         if group is not None:
@@ -111,7 +105,6 @@ class Database:
 
     @db_connect
     def create_groups_table(self, cur=None):
-        """Создание таблицы групп."""
         cur.execute("CREATE TABLE IF NOT EXISTS " +
                     "Groups(id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, " +
                     "group_name CHAR(20))")
@@ -126,7 +119,6 @@ class Database:
 
     @db_connect
     def get_groups(self, cur=None):
-        """Получить список групп."""
         groups_list = []
         for row in cur.execute("SELECT group_name FROM Groups"):
             groups_list.append(row[0])
@@ -137,7 +129,6 @@ class Database:
 
     @db_connect
     def create_notification_table(self, cur=None):
-        """Создание таблицы уведомлений."""
         cur.execute("CREATE TABLE IF NOT EXISTS " +
                     "Notification(" +
                     "id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT," +
@@ -148,7 +139,6 @@ class Database:
 
     @db_connect
     def insert_note(self, user_id, note, date, time, cur=None):
-        """Добавление уведомления."""
         cur.execute("INSERT INTO Notification " +
                     "(user_id, note, date, time)" +
                     "VALUES (?, ?, ?, ?)",
@@ -156,7 +146,6 @@ class Database:
 
     @db_connect
     def get_notes(self, cur=None):
-        """Получение списка уведомлений."""
         notes_list = []
         for row in cur.execute("SELECT * FROM Notification"):
             notes_list.append(row)
@@ -164,7 +153,6 @@ class Database:
 
     @db_connect
     def delete_note(self, note_id, cur=None):
-        """Удаление уведомления."""
         cur.execute("DELETE FROM Notification WHERE id=?", [note_id])
 
     # Session table api
@@ -172,7 +160,6 @@ class Database:
 
     @db_connect
     def create_session_table(self, cur=None):
-        """Создание таблицы расписания сессии."""
         cur.execute("CREATE TABLE IF NOT EXISTS " +
                     "Session(" +
                     "id INTEGER  NOT NULL PRIMARY KEY AUTOINCREMENT, " +
@@ -235,7 +222,6 @@ class Database:
 
     @db_connect
     def create_schedule_table(self, cur=None):
-        """Создание таблицы расписания."""
         cur.execute("CREATE TABLE IF NOT EXISTS " +
                     "Schedule(" +
                     "id INTEGER  NOT NULL PRIMARY KEY AUTOINCREMENT, " +
@@ -304,7 +290,6 @@ class Database:
     @db_connect
     def _fill_day(self, group, week_type, week_day, time, subject, location,
                   lesson_type='', teacher='', cur=None):
-        """Вставка в таблицу расписания на определенный день."""
         cur.execute("INSERT INTO Schedule " +
                     "(group_name, week_type, week_day," +
                     " time, lesson_type, subject, " +
@@ -326,7 +311,6 @@ class Database:
 
     @db_connect
     def get_day_schedule(self, group, week_type, week_day, cur=None):
-        """Возвращает расписание на заданный день."""
         result = []
         for row in cur.execute("SELECT week_day, time, lesson_type, subject," +
                                "teacher, location FROM Schedule WHERE " +
